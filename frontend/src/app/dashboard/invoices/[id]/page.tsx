@@ -6,7 +6,7 @@ import { useInvoicesStore } from '@/store/invoices.ts';
 import { useProjectsStore } from '@/store/projects.ts';
 import { useAuthStore } from '@/store/auth.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Invoice, InvoiceStatus } from '@/types';
+import { Invoice, InvoiceStatus, Project } from '@/types';
 import { ArrowLeft, Download, Send, CheckCircle, Trash2, Calendar } from 'lucide-react';
 
 const statusLabels: Record<InvoiceStatus, string> = {
@@ -90,7 +90,7 @@ export default function InvoiceDetailPage() {
 
   const invoiceProjects = invoice.project_ids
     .map((pid) => projects.find((p) => p.id === pid))
-    .filter(Boolean);
+    .filter((p): p is Project => p !== undefined);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -153,7 +153,7 @@ export default function InvoiceDetailPage() {
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">請求先</p>
               <p className="font-semibold text-gray-900">
                 {invoiceProjects[0]
-                  ? `${(invoiceProjects[0] as any).client_name} 御中`
+                  ? `${invoiceProjects[0].client_name} 御中`
                   : '—'}
               </p>
             </div>
@@ -204,7 +204,7 @@ export default function InvoiceDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {invoiceProjects.map((p: any) => (
+                {invoiceProjects.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.client_name}</td>

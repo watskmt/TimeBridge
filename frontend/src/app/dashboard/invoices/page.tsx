@@ -69,7 +69,6 @@ export default function InvoicesPage() {
   };
 
   const handleDownloadPdf = (id: number) => {
-    const token = localStorage.getItem('auth_token');
     const url = `/api/invoices/${id}/pdf`;
     const a = document.createElement('a');
     a.href = url;

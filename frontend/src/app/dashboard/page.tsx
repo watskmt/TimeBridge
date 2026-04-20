@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useProjectsStore } from '@/store/projects.ts';
 import { useTimeEntriesStore } from '@/store/time-entries.ts';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
   const { projects } = useProjectsStore();
   const { entries } = useTimeEntriesStore();
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [projectChartData, setProjectChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<{ month: string; hours: number; earnings: number }[]>([]);
+  const [projectChartData, setProjectChartData] = useState<{ name: string; value: number; hours: number }[]>([]);
 
   // グラフデータの準備
   useEffect(() => {

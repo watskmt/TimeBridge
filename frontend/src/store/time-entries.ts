@@ -22,8 +22,8 @@ interface TimeEntriesState {
   createTimeEntry: (request: CreateTimeEntryRequest) => Promise<TimeEntry>;
   updateTimeEntry: (id: number, updates: Partial<CreateTimeEntryRequest>) => Promise<TimeEntry>;
   deleteTimeEntry: (id: number) => Promise<void>;
-  getTimeSummary: (period: 'daily' | 'weekly' | 'monthly', params?: Record<string, any>) => Promise<TimeSummary>;
-  getProjectReport: (projectId: number) => Promise<any>;
+  getTimeSummary: (period: 'daily' | 'weekly' | 'monthly', params?: Record<string, unknown>) => Promise<TimeSummary>;
+  getProjectReport: (projectId: number) => Promise<unknown>;
 
   // Timer actions
   startTimer: (projectId: number) => void;
@@ -103,7 +103,7 @@ export const useTimeEntriesStore = create<TimeEntriesState>((set, get) => ({
     }
   },
 
-  getTimeSummary: async (period: 'daily' | 'weekly' | 'monthly', params = {}) => {
+  getTimeSummary: async (period: 'daily' | 'weekly' | 'monthly', params: Record<string, unknown> = {}) => {
     try {
       const { data } = await apiClient.get<TimeSummary>(`/time-entries/summary/${period}`, {
         params,

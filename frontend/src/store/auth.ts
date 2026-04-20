@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, AuthResponse, LoginRequest, RegisterRequest } from '@/types';
+import { User, LoginRequest, RegisterRequest } from '@/types';
 import { authApi } from '@/api/auth.ts';
 import { apiClient } from '@/api/client.ts';
 
@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const user = await authApi.getCurrentUser();
           set({ user, isAuthenticated: true });
-        } catch (error) {
+        } catch (_error) {
           set({ user: null, isAuthenticated: false });
         }
       },

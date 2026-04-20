@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiClient } from '@/api/client.ts';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Clock, DollarSign, Zap, Activity } from 'lucide-react';
 
@@ -36,8 +36,10 @@ function fmtMonthName(m: string) {
   return `${d.getMonth() + 1}月`;
 }
 
+interface TooltipEntry { value: number; payload: ProjectShare; }
+
 // ===== カスタム Tooltip =====
-function SalesTooltip({ active, payload, label }: any) {
+function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
@@ -46,7 +48,7 @@ function SalesTooltip({ active, payload, label }: any) {
     </div>
   );
 }
-function HoursTooltip({ active, payload, label }: any) {
+function HoursTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
@@ -55,7 +57,7 @@ function HoursTooltip({ active, payload, label }: any) {
     </div>
   );
 }
-function PieTooltip({ active, payload }: any) {
+function PieTooltip({ active, payload }: { active?: boolean; payload?: TooltipEntry[] }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (

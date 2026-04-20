@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProjectsStore } from '@/store/projects.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Project, ProjectStatus } from '@/types';
+import { ProjectStatus } from '@/types';
 import { Plus, Search, Filter, Calendar, DollarSign, TrendingUp, Trash2, Edit2 } from 'lucide-react';
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -45,7 +45,7 @@ export default function ProjectsPage() {
       try {
         await deleteProject(id);
         alert('削除しました');
-      } catch (error) {
+      } catch (_error) {
         alert('削除に失敗しました');
       }
     }

@@ -19,7 +19,7 @@ export default function ProjectFormPage() {
   const params = useParams();
   const projectId = params?.id ? Number(params.id) : null;
 
-  const { projects, fetchProject, createProject, updateProject } = useProjectsStore();
+  const { fetchProject, createProject, updateProject } = useProjectsStore();
   const [isLoading, setIsLoading] = useState(!!projectId);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

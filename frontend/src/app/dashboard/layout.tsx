@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.ts';
 import { useProjectsStore } from '@/store/projects.ts';
 import { useTimeEntriesStore } from '@/store/time-entries.ts';
-import { Button } from '@/components/ui/button.tsx';
-import { 
+import {
   BarChart3, 
   Clock, 
   Briefcase, 
