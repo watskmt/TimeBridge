@@ -1,0 +1,46 @@
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Backend (Laravel) =====
+backend/.env
+backend/.env.*.local
+backend/vendor/
+backend/bootstrap/cache/
+backend/storage/logs/
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/storage/app/public/
+backend/*.log
+backend/.phpunit.result.cache
+
+# ===== Frontend (Next.js) =====
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# ===== 一時ファイル・配布物 =====
+*.tar.gz
+*.zip
+DOWNLOAD_LINKS.html
+DOWNLOAD_URLS.txt
+SESSION_HISTORY.md
+PROJECT_COMPLETION_SUMMARY.md
