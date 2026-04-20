@@ -17,11 +17,11 @@ export default function NewInvoicePage() {
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [summaries, setSummaries] = useState<Record<number, ProjectSummary>>({});
-  const [issuedAt, setIssuedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [issuedAt, setIssuedAt] = useState(new Date().toISOString().split('T')[0] ?? '');
   const [dueAt, setDueAt] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().split('T')[0] ?? '';
   });
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);

@@ -35,7 +35,7 @@ export function Timer() {
 
   useEffect(() => {
     fetchProjects();
-    fetchTimeEntries({ start_date: new Date().toISOString().split('T')[0], end_date: new Date().toISOString().split('T')[0] });
+    fetchTimeEntries({ start_date: new Date().toISOString().split('T')[0] ?? '', end_date: new Date().toISOString().split('T')[0] ?? '' });
   }, [fetchProjects, fetchTimeEntries]);
 
   // タイマー更新
@@ -77,7 +77,7 @@ export function Timer() {
       await createTimeEntry({
         project_id: projectId,
         duration_minutes: durationMinutes,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0] ?? '',
         description: description || undefined,
         started_at: startedAtISO,
         ended_at: endTime.toISOString(),
@@ -87,8 +87,8 @@ export function Timer() {
       setSelectedProjectId('');
 
       await fetchTimeEntries({
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0],
+        start_date: new Date().toISOString().split('T')[0] ?? '',
+        end_date: new Date().toISOString().split('T')[0] ?? '',
       });
     } finally {
       setIsSaving(false);
@@ -98,8 +98,9 @@ export function Timer() {
   const isRunning = !!currentTimer.startTime;
   const activeProject = projects.find((p) => p.id === (currentTimer.projectId ?? Number(selectedProjectId)));
 
+  const todayStr = new Date().toISOString().split('T')[0] ?? '';
   const todayEntries = entries
-    .filter((e) => e.date === new Date().toISOString().split('T')[0] || e.date?.startsWith(new Date().toISOString().split('T')[0]))
+    .filter((e) => e.date === todayStr || e.date?.startsWith(todayStr))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const totalTodayMinutes = todayEntries.reduce((sum, e) => sum + e.duration_minutes, 0);
@@ -218,8 +219,8 @@ export function Timer() {
                 onDelete={async () => {
                   await deleteTimeEntry(entry.id);
                   await fetchTimeEntries({
-                    start_date: new Date().toISOString().split('T')[0],
-                    end_date: new Date().toISOString().split('T')[0],
+                    start_date: new Date().toISOString().split('T')[0] ?? '',
+                    end_date: new Date().toISOString().split('T')[0] ?? '',
                   });
                 }}
               />

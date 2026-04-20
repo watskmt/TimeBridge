@@ -29,8 +29,8 @@ export default function ProjectFormPage() {
     client_name: '',
     description: '',
     status: 'planning',
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    start_date: new Date().toISOString().split('T')[0] ?? '',
+    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '',
     budget_amount: 0,
     hourly_rate: 0,
   });

@@ -40,26 +40,29 @@ interface TooltipEntry { value: number; payload: ProjectShare; }
 
 // ===== カスタム Tooltip =====
 function SalesTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
-  if (!active || !payload?.length) return null;
+  const entry = payload?.[0];
+  if (!active || !entry) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-gray-700 mb-1">{label}</p>
-      <p className="text-blue-600 font-bold">{fmtYen(payload[0].value)}</p>
+      <p className="text-blue-600 font-bold">{fmtYen(entry.value)}</p>
     </div>
   );
 }
 function HoursTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
-  if (!active || !payload?.length) return null;
+  const entry = payload?.[0];
+  if (!active || !entry) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-gray-700 mb-1">{label}</p>
-      <p className="text-indigo-600 font-bold">{fmtHours(payload[0].value)}</p>
+      <p className="text-indigo-600 font-bold">{fmtHours(entry.value)}</p>
     </div>
   );
 }
 function PieTooltip({ active, payload }: { active?: boolean; payload?: TooltipEntry[] }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
+  const entry = payload?.[0];
+  if (!active || !entry) return null;
+  const d = entry.payload;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-gray-700 mb-1">{d.name}</p>

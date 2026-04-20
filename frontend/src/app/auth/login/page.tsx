@@ -52,7 +52,7 @@ export default function LoginPage() {
       await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
       router.push('/dashboard');
     } catch (_err) {
-      setError('デモアカウントでのログインに失敗しました。管理者にお問い合わせください。');
+      setError('デモアカウントでのログインに失敗しました。管理者にお問い合わせください。'+_err);
     } finally {
       setIsLoading(false);
     }
