@@ -1,96 +1,71 @@
-name: Deploy to VPS
+name: Deploy to WebArena
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Build Docker images
-      run: |
-        docker build -t timebridge-api:latest ./backend
-        docker build -t timebridge-web:latest ./frontend
-
-    - name: Login to Docker Registry
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Push Docker images
-      run: |
-        docker tag timebridge-api:latest ${{ secrets.DOCKER_REGISTRY }}/timebridge-api:latest
-        docker tag timebridge-web:latest ${{ secrets.DOCKER_REGISTRY }}/timebridge-web:latest
-        docker push ${{ secrets.DOCKER_REGISTRY }}/timebridge-api:latest
-        docker push ${{ secrets.DOCKER_REGISTRY }}/timebridge-web:latest
-
   deploy:
-    needs: build
+    name: Deploy to WebArena VPS
     runs-on: ubuntu-latest
-    
+    environment: production
+
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        port: ${{ secrets.VPS_PORT }}
-        script: |
-          cd /home/timebridge
-          
-          # Pull latest code
-          git pull origin main
-          
-          # Pull latest Docker images
-          docker pull ${{ secrets.DOCKER_REGISTRY }}/timebridge-api:latest
-          docker pull ${{ secrets.DOCKER_REGISTRY }}/timebridge-web:latest
-          
-          # Stop containers
-          docker-compose down
-          
-          # Update docker-compose.yml
-          docker-compose pull
-          
-          # Start new containers
-          docker-compose up -d
-          
-          # Run migrations
-          docker-compose exec -T backend php artisan migrate --force
-          
-          # Clear cache
-          docker-compose exec -T backend php artisan config:cache
-          docker-compose exec -T backend php artisan route:cache
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.WEBARENA_HOST }}
+          username: ${{ secrets.WEBARENA_USER }}
+          key: ${{ secrets.WEBARENA_SSH_KEY }}
+          port: ${{ secrets.WEBARENA_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/timebridge
 
-    - name: Health check
-      run: |
-        sleep 10
-        curl -f http://${{ secrets.VPS_HOST }}/api/health || exit 1
+            echo "=== Pull latest code ==="
+            git pull origin main
 
-    - name: Slack notification
-      if: always()
-      uses: slackapi/slack-github-action@v1.24.0
-      with:
-        payload: |
-          {
-            "text": "TimeBridge Deployment ${{ job.status }}",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Deployment to VPS: *${{ job.status }}*\nBranch: main\nCommit: ${{ github.sha }}"
-                }
-              }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+            echo "=== Copy production .env ==="
+            cp /opt/timebridge-secrets/backend.env backend/.env
+
+            echo "=== Build & start containers ==="
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            echo "=== Wait for DB ==="
+            sleep 5
+
+            echo "=== Run migrations ==="
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan migrate --force
+
+            echo "=== Cache config/routes/views ==="
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan config:cache
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan route:cache
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan view:cache
+
+            echo "=== Remove old images ==="
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          sleep 15
+          curl -sf "http://${{ secrets.WEBARENA_HOST }}/api/health" \
+            -o /dev/null \
+            -w "HTTP Status: %{http_code}\n" \
+            || (echo "Health check failed" && exit 1)
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ Deploy succeeded: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "Commit: ${{ github.sha }}"
+          echo "URL: http://${{ secrets.WEBARENA_HOST }}"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Deploy failed: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "Commit: ${{ github.sha }}"

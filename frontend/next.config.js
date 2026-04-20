@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   
   // API プロキシ設定
   rewrites: async () => {
