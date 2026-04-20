@@ -156,7 +156,7 @@ class ProjectControllerTest extends TestCase
 
     public function test_can_delete_own_project(): void
     {
-        $project = Project::factory()->create(['user_id' => $this->user->id]);
+        $project = Project::factory()->create(['user_id' => $this->user->id, 'status' => 'in_progress']);
 
         $response = $this->actingAs($this->user)->deleteJson("/api/projects/{$project->id}");
 
