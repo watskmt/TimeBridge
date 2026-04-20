@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -132,7 +131,7 @@ class DashboardController extends Controller
             ->active()
             ->get();
 
-        $data = $projects->map(fn($project) => [
+        $data = $projects->map(fn ($project) => [
             'name' => $project->name,
             'earnings' => round($project->getTotalEarnings(), 2),
             'percentage' => 0, // 後でフロント側で計算
@@ -142,6 +141,7 @@ class DashboardController extends Controller
         if ($total > 0) {
             $data = array_map(function ($item) use ($total) {
                 $item['percentage'] = round(($item['earnings'] / $total) * 100, 2);
+
                 return $item;
             }, $data);
         }
@@ -171,7 +171,7 @@ class DashboardController extends Controller
 
         // 案件別効率（売上 / 時間）
         $projectEfficiency = $user->projects()->active()->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'name' => $p->name,
                 'efficiency' => $p->getTotalHours() > 0
                     ? round($p->getTotalEarnings() / $p->getTotalHours(), 2)

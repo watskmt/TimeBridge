@@ -13,6 +13,7 @@ class ProjectTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Project $project;
 
     protected function setUp(): void
@@ -119,7 +120,7 @@ class ProjectTest extends TestCase
         Project::factory()->create(['user_id' => $this->user->id, 'status' => 'completed']);
 
         $active = Project::active()->get();
-        $this->assertTrue($active->every(fn($p) => in_array($p->status, ['planning', 'in_progress', 'inspection'])));
+        $this->assertTrue($active->every(fn ($p) => in_array($p->status, ['planning', 'in_progress', 'inspection'])));
     }
 
     public function test_scope_completed(): void
@@ -128,7 +129,7 @@ class ProjectTest extends TestCase
         Project::factory()->create(['user_id' => $this->user->id, 'status' => 'in_progress']);
 
         $completed = Project::completed()->get();
-        $this->assertTrue($completed->every(fn($p) => $p->status === 'completed'));
+        $this->assertTrue($completed->every(fn ($p) => $p->status === 'completed'));
     }
 
     public function test_soft_delete(): void

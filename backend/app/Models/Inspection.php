@@ -95,7 +95,7 @@ class Inspection extends Model
         }
 
         $completed = collect($this->checklist)
-            ->filter(fn($item) => $item['completed'] ?? false)
+            ->filter(fn ($item) => $item['completed'] ?? false)
             ->count();
 
         return ($completed / count($this->checklist)) * 100;
@@ -104,7 +104,7 @@ class Inspection extends Model
     public function isAllChecklistItemsCompleted()
     {
         return collect($this->checklist)
-            ->every(fn($item) => $item['completed'] ?? false);
+            ->every(fn ($item) => $item['completed'] ?? false);
     }
 
     public function addChecklistItem($title, $description = null)
@@ -123,7 +123,7 @@ class Inspection extends Model
     public function completeChecklistItem($itemId)
     {
         $checklist = collect($this->checklist)
-            ->map(fn($item) => $item['id'] === $itemId
+            ->map(fn ($item) => $item['id'] === $itemId
                 ? array_merge($item, ['completed' => true])
                 : $item
             )

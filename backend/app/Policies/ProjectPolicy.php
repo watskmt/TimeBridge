@@ -44,7 +44,7 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id && !in_array($project->status, ['inspection', 'completed']);
+        return $user->id === $project->user_id && ! in_array($project->status, ['inspection', 'completed']);
     }
 
     /**

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TimeEntry;
 use App\Models\Project;
+use App\Models\TimeEntry;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 
 class TimeEntryController extends Controller
 {
@@ -128,7 +128,7 @@ class TimeEntryController extends Controller
                     'project' => $items->first()->project,
                     'total_minutes' => $items->sum('duration_minutes'),
                     'total_hours' => $items->sum('duration_minutes') / 60,
-                    'earnings' => $items->sum(fn($e) => $e->getEarnings()),
+                    'earnings' => $items->sum(fn ($e) => $e->getEarnings()),
                 ];
             });
 
@@ -137,7 +137,7 @@ class TimeEntryController extends Controller
                 'date' => $date,
                 'data' => $summary,
                 'total_hours' => $entries->sum('duration_minutes') / 60,
-                'total_earnings' => $entries->sum(fn($e) => $e->getEarnings()),
+                'total_earnings' => $entries->sum(fn ($e) => $e->getEarnings()),
             ]);
         } elseif ($period === 'weekly') {
             $startDate = Carbon::parse($request->input('start_date', now()->startOfWeek()));
@@ -151,7 +151,7 @@ class TimeEntryController extends Controller
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $startDate->copy()->addDays(6)->toDateString(),
                 'total_hours' => $entries->sum('duration_minutes') / 60,
-                'total_earnings' => $entries->sum(fn($e) => $e->getEarnings()),
+                'total_earnings' => $entries->sum(fn ($e) => $e->getEarnings()),
                 'entries' => $entries,
             ]);
         } elseif ($period === 'monthly') {
@@ -163,11 +163,11 @@ class TimeEntryController extends Controller
                 ->with('project')
                 ->get();
 
-            $dailySummary = $entries->groupBy(fn($e) => $e->date->toDateString())
-                ->map(fn($items) => [
+            $dailySummary = $entries->groupBy(fn ($e) => $e->date->toDateString())
+                ->map(fn ($items) => [
                     'date' => $items->first()->date->toDateString(),
                     'hours' => $items->sum('duration_minutes') / 60,
-                    'earnings' => $items->sum(fn($e) => $e->getEarnings()),
+                    'earnings' => $items->sum(fn ($e) => $e->getEarnings()),
                 ]);
 
             return response()->json([
@@ -175,7 +175,7 @@ class TimeEntryController extends Controller
                 'year' => $year,
                 'month' => $month,
                 'total_hours' => $entries->sum('duration_minutes') / 60,
-                'total_earnings' => $entries->sum(fn($e) => $e->getEarnings()),
+                'total_earnings' => $entries->sum(fn ($e) => $e->getEarnings()),
                 'daily_summary' => $dailySummary,
             ]);
         }
@@ -198,7 +198,7 @@ class TimeEntryController extends Controller
         return response()->json([
             'project' => $project,
             'total_hours' => $entries->sum('duration_minutes') / 60,
-            'total_earnings' => $entries->sum(fn($e) => $e->getEarnings()),
+            'total_earnings' => $entries->sum(fn ($e) => $e->getEarnings()),
             'entries_count' => $entries->count(),
             'entries' => $entries,
         ]);

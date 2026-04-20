@@ -53,6 +53,7 @@ class TimeEntry extends Model
     public function scopeForWeek($query, $startDate)
     {
         $endDate = $startDate->copy()->addDays(6);
+
         return $query->whereBetween('date', [$startDate, $endDate]);
     }
 
@@ -71,6 +72,7 @@ class TimeEntry extends Model
     {
         $hours = intdiv($this->duration_minutes, 60);
         $minutes = $this->duration_minutes % 60;
+
         return sprintf('%dh %dm', $hours, $minutes);
     }
 }

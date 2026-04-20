@@ -82,6 +82,7 @@ class Project extends Model
         if ($this->budget_amount == 0) {
             return 0;
         }
+
         return min(100, ($this->getTotalEarnings() / $this->budget_amount) * 100);
     }
 

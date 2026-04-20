@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\Project;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
@@ -67,7 +67,7 @@ class InvoiceController extends Controller
 
         $invoice = $request->user()->invoices()->create([
             'project_ids' => $validated['project_ids'],
-            'invoice_number' => (new Invoice())->generateInvoiceNumber(),
+            'invoice_number' => (new Invoice)->generateInvoiceNumber(),
             'issued_at' => $validated['issued_at'],
             'due_at' => $validated['due_at'],
             'subtotal' => $subtotal,
@@ -142,7 +142,7 @@ class InvoiceController extends Controller
             ->setOption('dpi', 150)
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download($invoice->invoice_number . '.pdf');
+        return $pdf->download($invoice->invoice_number.'.pdf');
     }
 
     /**

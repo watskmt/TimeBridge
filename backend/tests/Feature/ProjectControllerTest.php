@@ -59,7 +59,7 @@ class ProjectControllerTest extends TestCase
         $response = $this->actingAs($this->user)->getJson('/api/projects?status=in_progress');
 
         $response->assertStatus(200);
-        $this->assertTrue(collect($response->json('data'))->every(fn($p) => $p['status'] === 'in_progress'));
+        $this->assertTrue(collect($response->json('data'))->every(fn ($p) => $p['status'] === 'in_progress'));
     }
 
     // ===== 作成 =====

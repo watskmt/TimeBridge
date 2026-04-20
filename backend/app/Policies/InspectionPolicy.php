@@ -36,7 +36,7 @@ class InspectionPolicy
      */
     public function update(User $user, Inspection $inspection): bool
     {
-        return $user->id === $inspection->user_id && 
+        return $user->id === $inspection->user_id &&
                in_array($inspection->status, ['pending', 'in_review', 'rejected']);
     }
 

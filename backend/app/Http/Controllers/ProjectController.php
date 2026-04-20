@@ -25,7 +25,7 @@ class ProjectController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('client_name', 'like', "%{$search}%");
+                    ->orWhere('client_name', 'like', "%{$search}%");
             });
         }
 

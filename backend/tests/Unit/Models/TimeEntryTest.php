@@ -13,7 +13,9 @@ class TimeEntryTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Project $project;
+
     private TimeEntry $entry;
 
     protected function setUp(): void
@@ -73,7 +75,7 @@ class TimeEntryTest extends TestCase
         ]);
 
         $entries = TimeEntry::forDate($today)->get();
-        $this->assertTrue($entries->every(fn($e) => $e->date->toDateString() === $today));
+        $this->assertTrue($entries->every(fn ($e) => $e->date->toDateString() === $today));
     }
 
     public function test_scope_for_month(): void
@@ -94,7 +96,7 @@ class TimeEntryTest extends TestCase
 
         $entries = TimeEntry::forMonth($year, $month)->get();
         $this->assertTrue($entries->every(
-            fn($e) => $e->date->year === $year && $e->date->month === $month
+            fn ($e) => $e->date->year === $year && $e->date->month === $month
         ));
     }
 

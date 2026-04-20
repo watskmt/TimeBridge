@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Inspection;
 use App\Models\Project;
-use App\Models\InspectionComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -15,8 +14,7 @@ class InspectionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inspection::whereHas('project', fn($q) => 
-            $q->where('user_id', $request->user()->id)
+        $query = Inspection::whereHas('project', fn ($q) => $q->where('user_id', $request->user()->id)
         );
 
         // ステータスフィルター

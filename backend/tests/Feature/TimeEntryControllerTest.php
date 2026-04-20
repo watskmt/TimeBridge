@@ -13,6 +13,7 @@ class TimeEntryControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Project $project;
 
     protected function setUp(): void
@@ -199,7 +200,7 @@ class TimeEntryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson('/api/time-entries/summary/monthly?year=' . now()->year . '&month=' . now()->month);
+            ->getJson('/api/time-entries/summary/monthly?year='.now()->year.'&month='.now()->month);
 
         $response->assertStatus(200)
             ->assertJsonStructure(['period', 'year', 'month', 'total_hours', 'total_earnings', 'daily_summary']);
