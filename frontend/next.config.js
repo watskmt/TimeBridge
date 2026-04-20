@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   
   // API プロキシ設定
@@ -46,10 +45,6 @@ const nextConfig = {
     ];
   },
 
-  // CORS 対応
-  experimental: {
-    allowMiddlewareResponseBody: true,
-  },
 };
 
 module.exports = nextConfig;

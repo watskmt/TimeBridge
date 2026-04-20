@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button.tsx';
@@ -10,7 +10,7 @@ import { Mail, Lock, AlertCircle, Zap } from 'lucide-react';
 const DEMO_EMAIL = 'demo@timebridge.app';
 const DEMO_PASSWORD = 'demo1234';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
@@ -52,7 +52,7 @@ export default function LoginPage() {
       await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
       router.push('/dashboard');
     } catch (_err) {
-      setError('デモアカウントでのログインに失敗しました。管理者にお問い合わせください。'+_err);
+      setError('デモアカウントでのログインに失敗しました。管理者にお問い合わせください。');
     } finally {
       setIsLoading(false);
     }
@@ -151,5 +151,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
