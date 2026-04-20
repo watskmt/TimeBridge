@@ -196,7 +196,7 @@ jobs:
 
             echo "=== Setup GitHub deploy key ==="
             mkdir -p ~/.ssh
-            echo "${{ secrets.GITHUB_SSH_KEY }}" > ~/.ssh/github_deploy_key
+            echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/github_deploy_key
             chmod 600 ~/.ssh/github_deploy_key
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
             export GIT_SSH_COMMAND="ssh -i ~/.ssh/github_deploy_key -o StrictHostKeyChecking=no"
