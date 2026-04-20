@@ -195,7 +195,7 @@ jobs:
             set -e
 
             echo "=== Pull latest code ==="
-            REPO_URL="https://x-access-token:${{ secrets.GH_PAT }}@github.com/watskmt/TimeBridge.git"
+            REPO_URL="https://${{ secrets.GH_PAT }}@github.com/watskmt/TimeBridge.git"
             if [ ! -d /opt/timebridge/.git ]; then
               git clone "$REPO_URL" /opt/timebridge
             fi
