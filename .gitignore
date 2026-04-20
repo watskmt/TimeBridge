@@ -17,7 +17,8 @@ docker-compose.override.yml
 backend/.env
 backend/.env.*.local
 backend/vendor/
-backend/bootstrap/cache/
+backend/bootstrap/cache/*
+!backend/bootstrap/cache/.gitkeep
 backend/storage/logs/
 backend/storage/framework/cache/
 backend/storage/framework/sessions/
