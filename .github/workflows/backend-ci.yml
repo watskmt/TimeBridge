@@ -2,19 +2,50 @@ name: Backend CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
 
 jobs:
-  test:
+  lint:
+    name: Lint (Pint)
     runs-on: ubuntu-latest
-    
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run Pint (code style)
+        working-directory: backend
+        run: ./vendor/bin/pint --test
+
+  test:
+    name: Test (PHPUnit)
+    runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -30,93 +61,50 @@ jobs:
         ports:
           - 5432:5432
 
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.4'
-        extensions: pdo, pdo_pgsql, redis
-        coverage: xdebug
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+          tools: composer:v2
+          coverage: none
 
-    - name: Install dependencies
-      working-directory: ./backend
-      run: composer install --no-interaction --prefer-dist
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
 
-    - name: Copy .env
-      working-directory: ./backend
-      run: |
-        cp .env.example .env
-        php artisan key:generate
+      - name: Install dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
 
-    - name: Setup Database
-      working-directory: ./backend
-      env:
-        DB_HOST: localhost
-        DB_DATABASE: timebridge_test
-        DB_USERNAME: timebridge_user
-        DB_PASSWORD: password
-        REDIS_HOST: localhost
-      run: |
-        php artisan migrate --env=testing
-        php artisan db:seed --env=testing
+      - name: Setup .env
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
-    - name: Run PHP Linter
-      working-directory: ./backend
-      run: |
-        composer lint
+      - name: Run migrations
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: timebridge_test
+          DB_USERNAME: timebridge_user
+          DB_PASSWORD: password
+        run: php artisan migrate --env=testing --force
 
-    - name: Run Tests
-      working-directory: ./backend
-      env:
-        DB_HOST: localhost
-        DB_DATABASE: timebridge_test
-        DB_USERNAME: timebridge_user
-        DB_PASSWORD: password
-        REDIS_HOST: localhost
-      run: |
-        php artisan test
-
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      if: always()
-      with:
-        files: ./backend/coverage.xml
-        flags: backend
-        name: backend-coverage
-
-  lint:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.4'
-
-    - name: Install dependencies
-      working-directory: ./backend
-      run: composer install --no-interaction --prefer-dist
-
-    - name: Run PHP CodeSniffer
-      working-directory: ./backend
-      run: |
-        composer run-script lint
-
-    - name: Run PHPStan
-      working-directory: ./backend
-      run: |
-        composer run-script analyze || true
+      - name: Run tests
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: timebridge_test
+          DB_USERNAME: timebridge_user
+          DB_PASSWORD: password
+        run: ./vendor/bin/phpunit --testdox
