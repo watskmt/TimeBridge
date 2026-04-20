@@ -193,10 +193,14 @@ jobs:
           port: ${{ secrets.WEBARENA_PORT || 22 }}
           script: |
             set -e
-            cd /opt/timebridge
 
             echo "=== Pull latest code ==="
-            git pull origin main
+            if [ ! -d /opt/timebridge/.git ]; then
+              git clone https://github.com/watskmt/TimeBridge.git /opt/timebridge
+            fi
+            cd /opt/timebridge
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "=== Copy production .env ==="
             cp /opt/timebridge-secrets/backend.env backend/.env
