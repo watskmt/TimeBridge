@@ -1,4 +1,4 @@
-name: Deploy to WebArena
+name: CI & Deploy
 
 on:
   push:
@@ -6,14 +6,169 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy to WebArena VPS
+  # ─────────────────────────────────────────
+  # Backend: Lint
+  # ─────────────────────────────────────────
+  backend-lint:
+    name: Backend Lint
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Pint
+        working-directory: backend
+        run: ./vendor/bin/pint --test
+
+  # ─────────────────────────────────────────
+  # Backend: Test
+  # ─────────────────────────────────────────
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: timebridge_test
+          POSTGRES_USER: timebridge_user
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Setup .env
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Migrate
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: timebridge_test
+          DB_USERNAME: timebridge_user
+          DB_PASSWORD: password
+        run: php artisan migrate --env=testing --force
+
+      - name: PHPUnit
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: timebridge_test
+          DB_USERNAME: timebridge_user
+          DB_PASSWORD: password
+        run: ./vendor/bin/phpunit --testdox
+
+  # ─────────────────────────────────────────
+  # Frontend: Lint & Type check
+  # ─────────────────────────────────────────
+  frontend-lint:
+    name: Frontend Lint & Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Type check
+        working-directory: frontend
+        run: npm run type-check
+
+  # ─────────────────────────────────────────
+  # Frontend: Build
+  # ─────────────────────────────────────────
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: frontend-lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_OUTPUT: standalone
+        run: npm run build
+
+  # ─────────────────────────────────────────
+  # Deploy（全 CI が通った後のみ実行）
+  # ─────────────────────────────────────────
+  deploy:
+    name: Deploy to WebArena
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-test, frontend-lint, frontend-build]
     environment: production
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -57,15 +212,10 @@ jobs:
             -w "HTTP Status: %{http_code}\n" \
             || (echo "Health check failed" && exit 1)
 
-      - name: Notify success
-        if: success()
+      - name: Summary
+        if: always()
         run: |
-          echo "✅ Deploy succeeded: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "Commit: ${{ github.sha }}"
-          echo "URL: http://${{ secrets.WEBARENA_HOST }}"
-
-      - name: Notify failure
-        if: failure()
-        run: |
-          echo "❌ Deploy failed: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "Commit: ${{ github.sha }}"
+          echo "### Deploy ${{ job.status == 'success' && '✅ 成功' || '❌ 失敗' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: http://${{ secrets.WEBARENA_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
