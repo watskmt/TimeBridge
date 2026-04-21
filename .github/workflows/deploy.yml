@@ -216,7 +216,13 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
             echo "=== Wait for DB ==="
-            sleep 5
+            sleep 10
+
+            echo "=== Fix container DNS (iptables disabled) ==="
+            POSTGRES_IP=$(docker inspect timebridge-db --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+            REDIS_IP=$(docker inspect timebridge-cache --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+            docker exec timebridge-api sh -c "grep -q 'postgres' /etc/hosts || echo '$POSTGRES_IP postgres' >> /etc/hosts"
+            docker exec timebridge-api sh -c "grep -q ' redis' /etc/hosts || echo '$REDIS_IP redis' >> /etc/hosts"
 
             echo "=== Run migrations ==="
             docker compose -f docker-compose.prod.yml exec -T backend php artisan migrate --force
