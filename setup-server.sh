@@ -27,37 +27,35 @@ fi
 
 # ===== 2. Docker networking 設定 (EL10 / nftables 環境) =====
 info "2/8 Docker ネットワーク設定中..."
+sudo mkdir -p /etc/docker
+
+# EL10 では iptables kernel モジュールが存在しないため iptables:false で起動
+# コンテナ間の DNS は docker-compose の extra_hosts + static IP で解決する
+cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
+{
+  "iptables": false
+}
+EOF
+
+sudo systemctl enable --now nftables 2>/dev/null || true
+sudo systemctl start docker
+sudo systemctl enable docker
 
 # IP フォワーディング
 sudo sysctl -w net.ipv4.ip_forward=1
 grep -q "net.ipv4.ip_forward" /etc/sysctl.conf || echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
 
-# nftables を有効化し、Docker が必要とするテーブル/チェーンを事前作成
-# これにより Docker が iptables を通常通り管理できるようになる (iptables:false 不要)
-sudo systemctl enable --now nftables 2>/dev/null || true
-
-sudo nft add table ip filter 2>/dev/null || true
-sudo nft 'add chain ip filter FORWARD { type filter hook forward priority 0 ; policy accept ; }' 2>/dev/null || true
-sudo nft add table ip nat 2>/dev/null || true
-sudo nft 'add chain ip nat PREROUTING { type nat hook prerouting priority -100 ; }' 2>/dev/null || true
-sudo nft 'add chain ip nat POSTROUTING { type nat hook postrouting priority 100 ; }' 2>/dev/null || true
-
-# daemon.json: iptables:false を使わない (Docker 標準の networking を有効にする)
-sudo mkdir -p /etc/docker
-echo '{}' | sudo tee /etc/docker/daemon.json > /dev/null
-
-sudo systemctl restart docker 2>/dev/null || sudo systemctl start docker
-sudo systemctl enable docker
-
 # Docker 起動待ち
-sleep 5
+sleep 3
 docker info &>/dev/null || error "Docker の起動に失敗しました"
 
-# nftables MASQUERADE ルール (コンテナからインターネット接続用フォールバック)
-DOCKER_SUBNET=$(docker network inspect bridge --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null || echo "172.17.0.0/16")
+# nftables MASQUERADE ルール (コンテナからインターネット接続)
+DOCKER_SUBNET="172.30.0.0/16"
 OUTBOUND_IF=$(ip route show default | awk '{print $5}' | head -1)
 info "  Docker subnet: $DOCKER_SUBNET, interface: $OUTBOUND_IF"
-sudo nft add rule ip nat POSTROUTING ip saddr "$DOCKER_SUBNET" oif "$OUTBOUND_IF" masquerade 2>/dev/null || true
+sudo nft add table ip nat 2>/dev/null || true
+sudo nft 'add chain ip nat postrouting { type nat hook postrouting priority 100 ; }' 2>/dev/null || true
+sudo nft add rule ip nat postrouting ip saddr "$DOCKER_SUBNET" oif "$OUTBOUND_IF" masquerade 2>/dev/null || true
 
 # ===== 3. ユーザーを docker グループに追加 =====
 info "3/8 docker グループ設定中..."

@@ -11,6 +11,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      default:
+        ipv4_address: 172.30.0.2
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
       interval: 10s
@@ -23,6 +26,9 @@ services:
     restart: always
     volumes:
       - redis_data:/data
+    networks:
+      default:
+        ipv4_address: 172.30.0.3
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -46,8 +52,14 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    extra_hosts:
+      - "postgres:172.30.0.2"
+      - "redis:172.30.0.3"
     ports:
       - "8000:80"
+    networks:
+      default:
+        ipv4_address: 172.30.0.4
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,6 +79,9 @@ services:
       - HOSTNAME=0.0.0.0
     ports:
       - "3001:3001"
+    networks:
+      default:
+        ipv4_address: 172.30.0.5
     depends_on:
       - backend
 
@@ -78,3 +93,6 @@ volumes:
 networks:
   default:
     name: timebridge-network
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

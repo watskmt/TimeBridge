@@ -201,20 +201,6 @@ jobs:
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
             export GIT_SSH_COMMAND="ssh -i ~/.ssh/github_deploy_key -o StrictHostKeyChecking=no"
 
-            echo "=== Ensure Docker networking is healthy (EL10 nftables) ==="
-            # Pre-create nftables tables/chains Docker needs so it can manage iptables normally
-            sudo nft add table ip filter 2>/dev/null || true
-            sudo nft 'add chain ip filter FORWARD { type filter hook forward priority 0 ; policy accept ; }' 2>/dev/null || true
-            sudo nft add table ip nat 2>/dev/null || true
-            sudo nft 'add chain ip nat PREROUTING { type nat hook prerouting priority -100 ; }' 2>/dev/null || true
-            sudo nft 'add chain ip nat POSTROUTING { type nat hook postrouting priority 100 ; }' 2>/dev/null || true
-            # Remove iptables:false if present so Docker DNS works
-            if grep -q '"iptables": false' /etc/docker/daemon.json 2>/dev/null; then
-              echo '{}' | sudo tee /etc/docker/daemon.json > /dev/null
-              sudo systemctl restart docker
-              sleep 5
-            fi
-
             echo "=== Pull latest code ==="
             if [ ! -d /opt/timebridge/.git ]; then
               git clone git@github.com:watskmt/TimeBridge.git /opt/timebridge
