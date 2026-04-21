@@ -232,7 +232,7 @@ jobs:
       - name: Health check
         run: |
           sleep 15
-          curl -sf "http://${{ secrets.WEBARENA_HOST }}/api/health" \
+          curl -sf "http://timebridge.watarusakamoto.com/api/health" \
             -o /dev/null \
             -w "HTTP Status: %{http_code}\n" \
             || (echo "Health check failed" && exit 1)
