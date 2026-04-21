@@ -6,7 +6,7 @@ set -e
 REPO_URL="git@github.com:watskmt/TimeBridge.git"
 DEPLOY_DIR="/opt/timebridge"
 SECRETS_DIR="/opt/timebridge-secrets"
-DOMAIN="timebridge.watarusakamoto.com"
+DOMAIN="timebridge.amtech-service.com"
 FRONTEND_PORT="3001"
 BACKEND_PORT="8000"
 
