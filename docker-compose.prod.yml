@@ -70,19 +70,6 @@ services:
     depends_on:
       - backend
 
-  nginx:
-    image: nginx:alpine
-    container_name: timebridge-proxy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - backend
-      - frontend
 
 volumes:
   postgres_data:
