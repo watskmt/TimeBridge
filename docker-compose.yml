@@ -1,14 +1,12 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: timebridge-db
     environment:
-      POSTGRES_DB: timebridge
-      POSTGRES_USER: timebridge_user
-      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: ${DB_DATABASE:-timebridge}
+      POSTGRES_USER: ${DB_USERNAME:-timebridge_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-local_dev_password}
     ports:
       - "5432:5432"
     volumes:
@@ -44,9 +42,9 @@ services:
       - APP_DEBUG=true
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=timebridge
-      - DB_USERNAME=timebridge_user
-      - DB_PASSWORD=secure_password
+      - DB_DATABASE=${DB_DATABASE:-timebridge}
+      - DB_USERNAME=${DB_USERNAME:-timebridge_user}
+      - DB_PASSWORD=${DB_PASSWORD:-local_dev_password}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     ports:
