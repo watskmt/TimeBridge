@@ -34,9 +34,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: backend
-      dockerfile: Dockerfile.prod
+    image: ${BACKEND_IMAGE:-ghcr.io/watskmt/timebridge-backend:latest}
     container_name: timebridge-api
     restart: always
     env_file: backend/.env
@@ -65,9 +63,7 @@ services:
         condition: service_healthy
 
   frontend:
-    build:
-      context: frontend
-      dockerfile: Dockerfile.prod
+    image: ${FRONTEND_IMAGE:-ghcr.io/watskmt/timebridge-frontend:latest}
     container_name: timebridge-web
     restart: always
     environment:

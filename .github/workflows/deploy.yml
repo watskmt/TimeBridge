@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  BACKEND_IMAGE: ghcr.io/watskmt/timebridge-backend
+  FRONTEND_IMAGE: ghcr.io/watskmt/timebridge-frontend
+
 jobs:
   # ─────────────────────────────────────────
   # Backend: Lint
@@ -141,59 +145,99 @@ jobs:
         run: npm run type-check
 
   # ─────────────────────────────────────────
-  # Frontend: Build
+  # Build & Push images to GHCR
   # ─────────────────────────────────────────
-  frontend-build:
-    name: Frontend Build
+  build-backend:
+    name: Build & Push Backend Image
     runs-on: ubuntu-latest
-    needs: frontend-lint
+    needs: [backend-lint, backend-test]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: '20'
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cache node_modules
-        uses: actions/cache@v4
+      - name: Build & push backend image
+        uses: docker/build-push-action@v6
         with:
-          path: frontend/node_modules
-          key: node-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: node-
+          context: backend
+          file: backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install
-        working-directory: frontend
-        run: npm ci
+  build-frontend:
+    name: Build & Push Frontend Image
+    runs-on: ubuntu-latest
+    needs: frontend-lint
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Build
-        working-directory: frontend
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_OUTPUT: standalone
-        run: npm run build
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ─────────────────────────────────────────
-  # Deploy（全 CI が通った後のみ実行）
+  # Deploy（イメージ build & push 後にサーバは pull するだけ）
   # ─────────────────────────────────────────
   deploy:
     name: Deploy to WebArena
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-test, frontend-lint, frontend-build]
+    needs: [build-backend, build-frontend]
     environment: production
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.WEBARENA_HOST }}
           username: ${{ secrets.WEBARENA_USER }}
           key: ${{ secrets.WEBARENA_SSH_KEY }}
           port: ${{ secrets.WEBARENA_PORT || 22 }}
-          # docker compose up --build can take >10m (default) when pulling/building
-          # images on the server, which caused "Run Command Timeout". Allow 30m.
-          command_timeout: 30m
+          envs: GHCR_TOKEN,GHCR_USER,IMAGE_TAG
+          # No build on the server anymore — just pull. Keep headroom for pulls.
+          command_timeout: 20m
           script: |
             set -e
 
@@ -204,7 +248,7 @@ jobs:
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
             export GIT_SSH_COMMAND="ssh -i ~/.ssh/github_deploy_key -o StrictHostKeyChecking=no"
 
-            echo "=== Pull latest code ==="
+            echo "=== Pull latest code (compose files / .env only) ==="
             if [ ! -d /opt/timebridge/.git ]; then
               git clone git@github.com:watskmt/TimeBridge.git /opt/timebridge
             fi
@@ -215,8 +259,16 @@ jobs:
             echo "=== Copy production .env ==="
             cp /opt/timebridge-secrets/backend.env backend/.env
 
-            echo "=== Build & start containers ==="
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            echo "=== Log in to GHCR ==="
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            echo "=== Pull prebuilt images ==="
+            export BACKEND_IMAGE=ghcr.io/watskmt/timebridge-backend:$IMAGE_TAG
+            export FRONTEND_IMAGE=ghcr.io/watskmt/timebridge-frontend:$IMAGE_TAG
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "=== Start containers ==="
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "=== Wait for DB ==="
             sleep 15
@@ -229,7 +281,8 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T backend php artisan route:cache
             docker compose -f docker-compose.prod.yml exec -T backend php artisan view:cache
 
-            echo "=== Remove old images ==="
+            echo "=== Logout & remove old images ==="
+            docker logout ghcr.io
             docker image prune -f
 
       - name: Health check
