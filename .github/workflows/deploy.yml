@@ -281,6 +281,9 @@ jobs:
             echo "=== Run migrations ==="
             docker compose -f docker-compose.prod.yml exec -T backend php artisan migrate --force
 
+            echo "=== Seed demo account (idempotent; no-op if DEMO_USER_* unset) ==="
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan db:seed --force
+
             echo "=== Cache config/routes/views ==="
             docker compose -f docker-compose.prod.yml exec -T backend php artisan config:cache
             docker compose -f docker-compose.prod.yml exec -T backend php artisan route:cache
