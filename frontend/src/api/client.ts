@@ -1,6 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// 未設定なら同一オリジンの相対パス (`/api`) を使う。本番は nginx が /api/ を
+// backend にプロキシし、dev は next.config.js の rewrite が localhost:8000 に流す。
+// NEXT_PUBLIC_API_URL を絶対URLで設定した場合はそちらを優先。
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const API_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000');
 
 /**

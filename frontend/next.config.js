@@ -18,8 +18,9 @@ const nextConfig = {
   },
 
   // 環境変数
+  // 未設定時は空文字（=同一オリジンの相対 /api を使う）。localhost を焼き込まない。
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
   },
 
   // セキュリティヘッダー
