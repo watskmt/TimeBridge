@@ -1,0 +1,52 @@
+name: Claude Auto Fix
+
+# `claude` ラベルが付いたIssue、または Issue/PR で @claude とメンションされたときに、
+# Claude Code が自動でコードを修正し、ブランチにコミット & PR を作成する。
+on:
+  issues:
+    types: [labeled, opened]
+  issue_comment:
+    types: [created]
+
+# 無限ループ防止: claude ラベル or @claude メンション時のみ起動
+jobs:
+  auto-fix:
+    name: Claude resolves the issue
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Issue を1件として渡し、原因調査 → 修正 → コミット → PR まで自動実行させる
+          prompt: |
+            あなたはこのリポジトリのメンテナです。
+            このIssue (#${{ github.event.issue.number }}) のCI失敗を解決してください。
+
+            手順:
+            1. Issue本文の失敗ジョブ/ステップを確認し、原因を特定する
+            2. backend は Laravel(PHP 8.4 / Pint / PHPUnit)、frontend は Next.js(ESLint / tsc / Jest)
+            3. ローカルで該当のlint/type-check/testを実行して再現・検証する
+            4. 最小限の変更で修正する。無関係なリファクタリングはしない
+            5. `fix/ci-issue-${{ github.event.issue.number }}` ブランチを作成してコミットする
+            6. 元ブランチ向けのPRを作成し、本文に `Closes #${{ github.event.issue.number }}` を含める
+            7. 原因と対応内容をIssueにコメントで報告する
+
+            修正できない/原因が不明な場合は、推測される原因と必要な追加情報をIssueにコメントしてください。
+          claude_args: |
+            --allowedTools "Bash,Read,Edit,Write,Glob,Grep"
+            --max-turns 30

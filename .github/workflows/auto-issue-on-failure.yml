@@ -1,0 +1,103 @@
+name: Auto Issue on CI Failure
+
+# CI / デプロイ系ワークフローが失敗したら、自動で Issue を作成する。
+# 作成された Issue には `claude` ラベルが付き、claude-auto-fix.yml が自動修正を試みる。
+on:
+  workflow_run:
+    workflows:
+      - Backend CI
+      - Frontend CI
+      - CI & Deploy
+    types:
+      - completed
+
+permissions:
+  issues: write
+  actions: read
+  contents: read
+
+jobs:
+  create-issue:
+    name: Create issue for failed run
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // 失敗したジョブとステップを収集
+            const jobsResp = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: run.id,
+              per_page: 100,
+            });
+            const failedJobs = jobsResp.data.jobs.filter(j => j.conclusion === 'failure');
+
+            const jobLines = failedJobs.map(j => {
+              const failedSteps = (j.steps || [])
+                .filter(s => s.conclusion === 'failure')
+                .map(s => `    - ❌ ${s.name}`)
+                .join('\n');
+              return `- **${j.name}**\n${failedSteps || '    - (step detail unavailable)'}`;
+            }).join('\n');
+
+            const title = `🤖 CI failure: ${run.name} on ${run.head_branch} (#${run.run_number})`;
+
+            const body = [
+              `## CI ワークフローが失敗しました`,
+              ``,
+              `| 項目 | 値 |`,
+              `| --- | --- |`,
+              `| Workflow | \`${run.name}\` |`,
+              `| Branch | \`${run.head_branch}\` |`,
+              `| Commit | ${run.head_sha} |`,
+              `| Triggered by | @${run.actor?.login ?? 'unknown'} |`,
+              `| Run | [#${run.run_number}](${run.html_url}) |`,
+              ``,
+              `### 失敗したジョブ / ステップ`,
+              jobLines || '- (no failed jobs reported)',
+              ``,
+              `### 対応依頼`,
+              `@claude このCI失敗の原因を調査し、修正してください。`,
+              `失敗したステップのログは上記 Run のリンクから確認できます。`,
+              `修正後は新しいブランチにコミットし、\`${run.head_branch}\` 向けのPRを作成してください。`,
+              ``,
+              `<sub>このIssueは auto-issue-on-failure.yml により自動生成されました。</sub>`,
+            ].join('\n');
+
+            // 同一 workflow + branch の未解決Issueがあれば重複作成しない
+            const dedupKey = `ci-failure:${run.name}:${run.head_branch}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: 'ci-failure',
+              per_page: 100,
+            });
+            const dup = existing.data.find(i => i.body && i.body.includes(dedupKey));
+
+            if (dup) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: dup.number,
+                body: `🔁 同じワークフローが再び失敗しました: [Run #${run.run_number}](${run.html_url})`,
+              });
+              core.info(`Updated existing issue #${dup.number}`);
+              return;
+            }
+
+            const created = await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body: `${body}\n\n<!-- ${dedupKey} -->`,
+              labels: ['ci-failure', 'claude'],
+            });
+            core.info(`Created issue #${created.data.number}`);
