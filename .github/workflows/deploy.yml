@@ -191,6 +191,9 @@ jobs:
           username: ${{ secrets.WEBARENA_USER }}
           key: ${{ secrets.WEBARENA_SSH_KEY }}
           port: ${{ secrets.WEBARENA_PORT || 22 }}
+          # docker compose up --build can take >10m (default) when pulling/building
+          # images on the server, which caused "Run Command Timeout". Allow 30m.
+          command_timeout: 30m
           script: |
             set -e
 
