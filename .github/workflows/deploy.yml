@@ -259,6 +259,11 @@ jobs:
             echo "=== Copy production .env ==="
             cp /opt/timebridge-secrets/backend.env backend/.env
 
+            echo "=== Free disk space before pull (dangling images + build cache) ==="
+            docker image prune -f
+            docker builder prune -af
+            df -h / | tail -1
+
             echo "=== Log in to GHCR ==="
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
@@ -284,6 +289,7 @@ jobs:
             echo "=== Logout & remove old images ==="
             docker logout ghcr.io
             docker image prune -f
+            docker builder prune -af
 
       - name: Health check
         run: |
