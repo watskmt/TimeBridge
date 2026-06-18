@@ -29,6 +29,12 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className={inter.className}>
+        <div
+          aria-label="DEMO版"
+          className="fixed top-0 left-0 z-[9999] bg-red-600 px-2 py-1 text-xs font-bold text-white shadow-md pointer-events-none select-none"
+        >
+          DEMO版
+        </div>
         <Providers>{children}</Providers>
       </body>
     </html>
